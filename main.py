@@ -89,9 +89,9 @@ def main():
 
                 # Process image items to rotate and flip them (if not removed)
                 elif item.get_type() == ebooklib.ITEM_IMAGE:
-                    if item not in book.get_items():  # Skip removed images
-                        modified_image_data = rotate_and_flip_image(item.get_content())
-                        item.set_content(modified_image_data)
+                    # Rotate and flip image
+                    modified_image_data = rotate_and_flip_image(item.get_content())
+                    item.set_content(modified_image_data)
 
             # Write the modified EPUB to a new file
             epub.write_epub(output_filename, book)
