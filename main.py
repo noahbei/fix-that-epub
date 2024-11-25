@@ -15,17 +15,22 @@ def rotate_and_flip_image(image_data):
     flipped_image.save(byte_arr, format=image.format)
     return byte_arr.getvalue()
 
-def remove_image_from_epub(book, image_filename):
-    """Remove all instances of a specific image from the EPUB."""
+def remove_images_by_dimensions(book, target_dimensions):
+    """Remove all images that match the specified dimensions."""
     items_to_remove = []  # Collect items to remove
     # Convert the generator to a list to allow modification
     items_list = list(book.get_items())
     
     for item in items_list:
         if item.get_type() == ebooklib.ITEM_IMAGE:
-            # Check if the image's filename matches the one to be removed
-            if image_filename in item.get_name():
-                print(f"Removing image: {item.get_name()}")
+            # Get image data
+            image_data = item.get_content()
+            image = Image.open(io.BytesIO(image_data))
+            width, height = image.size
+
+            # Check if the image dimensions match any of the target dimensions
+            if (width, height) in target_dimensions:
+                print(f"Removing image: {item.get_name()} (Dimensions: {width}x{height})")
                 items_to_remove.append(item)  # Add item to removal list
                 
     # Remove items after iteration is complete
@@ -56,13 +61,18 @@ def main():
             # Read the EPUB file
             book = epub.read_epub(input_filename)
 
-            # Get the filenames of images to remove
-            image_to_remove_1 = input("Enter the filename of the first image to remove: ")
-            image_to_remove_2 = input("Enter the filename of the second image to remove: ")
+            # Get the two sets of image dimensions to remove
+            print("Enter the dimensions of the first set of images to remove:")
+            width1 = int(input("Enter width of the first set: "))
+            height1 = int(input("Enter height of the first set: "))
 
-            # Remove the specified images from the EPUB
-            book = remove_image_from_epub(book, image_to_remove_1)
-            book = remove_image_from_epub(book, image_to_remove_2)
+            print("Enter the dimensions of the second set of images to remove:")
+            width2 = int(input("Enter width of the second set: "))
+            height2 = int(input("Enter height of the second set: "))
+
+            # Remove the images with the specified dimensions
+            target_dimensions = [(width1, height1), (width2, height2)]
+            book = remove_images_by_dimensions(book, target_dimensions)
 
             # Iterate through all items in the EPUB to modify text and rotate/flip images
             for item in book.get_items():
@@ -79,7 +89,7 @@ def main():
 
                 # Process image items to rotate and flip them (if not removed)
                 elif item.get_type() == ebooklib.ITEM_IMAGE:
-                    if item.get_name() not in [image_to_remove_1, image_to_remove_2]:  # Skip removed images
+                    if item not in book.get_items():  # Skip removed images
                         modified_image_data = rotate_and_flip_image(item.get_content())
                         item.set_content(modified_image_data)
 
