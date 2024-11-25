@@ -15,6 +15,28 @@ def rotate_and_flip_image(image_data):
     flipped_image.save(byte_arr, format=image.format)
     return byte_arr.getvalue()
 
+def remove_image_from_epub(book, image_filename):
+    """Remove all instances of a specific image from the EPUB."""
+    items_to_remove = []  # Collect items to remove
+    # Convert the generator to a list to allow modification
+    items_list = list(book.get_items())
+    
+    for item in items_list:
+        if item.get_type() == ebooklib.ITEM_IMAGE:
+            # Check if the image's filename matches the one to be removed
+            if image_filename in item.get_name():
+                print(f"Removing image: {item.get_name()}")
+                items_to_remove.append(item)  # Add item to removal list
+                
+    # Remove items after iteration is complete
+    for item in items_to_remove:
+        items_list.remove(item)  # Remove item from the list
+    
+    # Update the book's items
+    book.items = items_list
+    
+    return book
+
 def main():
     # Get the filename from the user
     input_filename = input("Enter the filename: ")
@@ -34,7 +56,15 @@ def main():
             # Read the EPUB file
             book = epub.read_epub(input_filename)
 
-            # Iterate through all items in the EPUB
+            # Get the filenames of images to remove
+            image_to_remove_1 = input("Enter the filename of the first image to remove: ")
+            image_to_remove_2 = input("Enter the filename of the second image to remove: ")
+
+            # Remove the specified images from the EPUB
+            book = remove_image_from_epub(book, image_to_remove_1)
+            book = remove_image_from_epub(book, image_to_remove_2)
+
+            # Iterate through all items in the EPUB to modify text and rotate/flip images
             for item in book.get_items():
                 # Process text/html items to replace the string
                 if item.get_type() == ebooklib.ITEM_DOCUMENT:
@@ -47,10 +77,11 @@ def main():
                     # Update the item content
                     item.set_content(modified_content.encode('utf-8'))
 
-                # Process image items to rotate and flip them
+                # Process image items to rotate and flip them (if not removed)
                 elif item.get_type() == ebooklib.ITEM_IMAGE:
-                    modified_image_data = rotate_and_flip_image(item.get_content())
-                    item.set_content(modified_image_data)
+                    if item.get_name() not in [image_to_remove_1, image_to_remove_2]:  # Skip removed images
+                        modified_image_data = rotate_and_flip_image(item.get_content())
+                        item.set_content(modified_image_data)
 
             # Write the modified EPUB to a new file
             epub.write_epub(output_filename, book)
