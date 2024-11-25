@@ -6,12 +6,13 @@ from bs4 import BeautifulSoup
 from PIL import Image
 import io
 
-def rotate_image(image_data):
-    """Rotate an image by 180 degrees."""
+def rotate_and_flip_image(image_data):
+    """Rotate an image by 180 degrees and flip it horizontally."""
     image = Image.open(io.BytesIO(image_data))
     rotated_image = image.rotate(180)
+    flipped_image = rotated_image.transpose(Image.FLIP_LEFT_RIGHT)
     byte_arr = io.BytesIO()
-    rotated_image.save(byte_arr, format=image.format)
+    flipped_image.save(byte_arr, format=image.format)
     return byte_arr.getvalue()
 
 def main():
@@ -46,10 +47,10 @@ def main():
                     # Update the item content
                     item.set_content(modified_content.encode('utf-8'))
 
-                # Process image items to rotate them
+                # Process image items to rotate and flip them
                 elif item.get_type() == ebooklib.ITEM_IMAGE:
-                    rotated_image_data = rotate_image(item.get_content())
-                    item.set_content(rotated_image_data)
+                    modified_image_data = rotate_and_flip_image(item.get_content())
+                    item.set_content(modified_image_data)
 
             # Write the modified EPUB to a new file
             epub.write_epub(output_filename, book)
