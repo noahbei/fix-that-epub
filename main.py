@@ -3,6 +3,16 @@ import shutil
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
+from PIL import Image
+import io
+
+def rotate_image(image_data):
+    """Rotate an image by 180 degrees."""
+    image = Image.open(io.BytesIO(image_data))
+    rotated_image = image.rotate(180)
+    byte_arr = io.BytesIO()
+    rotated_image.save(byte_arr, format=image.format)
+    return byte_arr.getvalue()
 
 def main():
     # Get the filename from the user
@@ -25,7 +35,7 @@ def main():
 
             # Iterate through all items in the EPUB
             for item in book.get_items():
-                # Only process text/html items
+                # Process text/html items to replace the string
                 if item.get_type() == ebooklib.ITEM_DOCUMENT:
                     # Parse the content with BeautifulSoup
                     soup = BeautifulSoup(item.get_body_content(), 'html.parser')
@@ -35,6 +45,11 @@ def main():
 
                     # Update the item content
                     item.set_content(modified_content.encode('utf-8'))
+
+                # Process image items to rotate them
+                elif item.get_type() == ebooklib.ITEM_IMAGE:
+                    rotated_image_data = rotate_image(item.get_content())
+                    item.set_content(rotated_image_data)
 
             # Write the modified EPUB to a new file
             epub.write_epub(output_filename, book)
